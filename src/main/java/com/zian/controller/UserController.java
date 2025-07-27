@@ -36,7 +36,7 @@ public class UserController {
 
     @GetMapping("/search")
     public List<User> searchUserByIds (@RequestBody List<Long> ids, HttpServletRequest request) {
-        if(ids == null || ids.isEmpty()) {
+        if(ids == null || ids.isEmpty() || request == null) {
             return null;
         }
         if(!userService.isAdmin(request)) {
@@ -49,7 +49,7 @@ public class UserController {
 
     @DeleteMapping("/delete/{id}")
     public boolean deleteUserById(@PathVariable Long id, HttpServletRequest request) {
-        if(id == null) {
+        if(id == null || request == null) {
             return false;
         }
         if(!userService.isAdmin(request)) {
@@ -61,6 +61,17 @@ public class UserController {
 
     @GetMapping("/current")
     public User getCurrentUser(HttpServletRequest request) {
+        if(request == null) {
+            return null;
+        }
         return userService.getCurrentUser(request);
+    }
+
+    @GetMapping("/logout")
+    public void userLogout (HttpServletRequest request) {
+        if(request == null) {
+            return;
+        }
+        userService.userLogout(request);
     }
 }
