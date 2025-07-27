@@ -39,4 +39,18 @@ public interface UserService extends IService<User> {
      * @return
      */
     User anonymize(User user);
+
+    /**
+     * 获取当前登录的用户
+     * @param request
+     * @return
+     */
+    User getCurrentUser(HttpServletRequest request);
+
+    /**
+     * 检测是否是管理员用户
+     * @param request
+     * @return
+     */
+    boolean isAdmin(HttpServletRequest request);
 }

@@ -17,6 +17,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.List;
 
+import static com.zian.constant.UserConstant.ADMIN_ROLE;
+import static com.zian.constant.UserConstant.USER_LOGIN_STATE;
+
 /**
  *  用户服务实现类
  *  @author Wang Zijian
@@ -86,13 +89,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             log.info("user login failed, userAccount and password not match");
             return null;
         }
-
-        // 如果已经有登录态，直接返回
-        User sessionUser = (User)request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        if(sessionUser != null) {
-            return sessionUser;
-        }
-
         // 脱敏
         User newUser = anonymize(user);
         // 记录用户登录态
@@ -102,6 +98,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public User anonymize(User user) {
+        if(user == null) {
+            return null;
+        }
         User newUser = new User();
         newUser.setId(user.getId());
         newUser.setUserRole(user.getUserRole());
@@ -114,6 +113,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         newUser.setEmail(user.getEmail());
         newUser.setUserStatus(user.getUserStatus());
         return newUser;
+    }
+
+    @Override
+    public User getCurrentUser(HttpServletRequest request) {
+        User curUser = (User)request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if(curUser == null) {
+            return null;
+        }
+        // todo 用户合法性检验
+        long curId = curUser.getId();
+        return anonymize(getById(curId));
+    }
+
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
+        return user != null && user.getUserRole() == ADMIN_ROLE;
     }
 
 

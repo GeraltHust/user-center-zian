@@ -7,12 +7,9 @@ import com.zian.service.user.UserService;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.zian.constant.UserConstant.ADMIN_ROLE;
-import static com.zian.constant.UserConstant.USER_LOGIN_STATE;
 
 @RestController
 @RequestMapping("/user")
@@ -42,7 +39,7 @@ public class UserController {
         if(ids == null || ids.isEmpty()) {
             return null;
         }
-        if(!isAdmin(request)) {
+        if(!userService.isAdmin(request)) {
             return null;
         }
         return userService.searchUser(ids).stream()
@@ -55,20 +52,15 @@ public class UserController {
         if(id == null) {
             return false;
         }
-        if(!isAdmin(request)) {
+        if(!userService.isAdmin(request)) {
             return false;
         }
         userService.getBaseMapper().deleteById(id);
         return true;
     }
 
-    /**
-     * 鉴权
-     * @param request
-     * @return
-     */
-    private boolean isAdmin(HttpServletRequest request) {
-        User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
-        return user != null && user.getUserRole() == ADMIN_ROLE;
+    @GetMapping("/current")
+    public User getCurrentUser(HttpServletRequest request) {
+        return userService.getCurrentUser(request);
     }
 }
