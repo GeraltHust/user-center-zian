@@ -132,6 +132,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return user != null && user.getUserRole() == ADMIN_ROLE;
     }
 
+    @Override
+    public void userLogout(HttpServletRequest request) {
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
+    }
+
 
     @Override
     public List<User> searchUser(List<Long> ids) {
