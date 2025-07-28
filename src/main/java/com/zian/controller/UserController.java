@@ -1,5 +1,6 @@
 package com.zian.controller;
 
+import com.zian.common.response.BaseResponse;
 import com.zian.dao.entity.User;
 import com.zian.model.request.UserLoginRequest;
 import com.zian.model.request.UserRegisterRequest;
@@ -9,6 +10,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.zian.constant.BaseResponseCode;
 
 
 @RestController
@@ -19,52 +21,55 @@ public class UserController {
     private UserService userService;
 
     @PostMapping(value = "/register")
-    public long userRegister (@RequestBody UserRegisterRequest req) {
+    public BaseResponse<Long> userRegister (@RequestBody UserRegisterRequest req) {
         if(req == null) {
-            return -1;
+            return new BaseResponse<>(BaseResponseCode.PARAM_ERR, null);
         }
-        return userService.userRegister(req.getUserAccount(), req.getPassword(), req.getCheckpwd());
+        Long res = userService.userRegister(req.getUserAccount(), req.getPassword(), req.getCheckpwd());
+        return new BaseResponse<>(BaseResponseCode.SUCCESS, res, "ok");
     }
 
     @PostMapping("/login")
-    public User userLogin (@RequestBody UserLoginRequest req, HttpServletRequest request) {
+    public BaseResponse<User> userLogin (@RequestBody UserLoginRequest req, HttpServletRequest request) {
         if(req == null) {
-            return null;
+            return new BaseResponse<>(BaseResponseCode.PARAM_ERR, null);
         }
-        return userService.userLogin(req.getUsername(), req.getPassword(), request);
+        User user = userService.userLogin(req.getUsername(), req.getPassword(), request);
+        return new BaseResponse<>(BaseResponseCode.SUCCESS, user, "ok");
     }
 
     @GetMapping("/search")
-    public List<User> searchUserByIds (@RequestBody List<Long> ids, HttpServletRequest request) {
+    public BaseResponse<List<User>> searchUserByIds (@RequestBody List<Long> ids, HttpServletRequest request) {
         if(ids == null || ids.isEmpty() || request == null) {
-            return null;
+            return new BaseResponse<>(BaseResponseCode.PARAM_ERR, null);
         }
         if(!userService.isAdmin(request)) {
-            return null;
+            return new BaseResponse<>(BaseResponseCode.NO_AUTH, null);
         }
-        return userService.searchUser(ids).stream()
+        List<User> res = userService.searchUser(ids).stream()
                 .map(user -> userService.anonymize(user))
                 .collect(Collectors.toList());
+        return new BaseResponse<>(BaseResponseCode.SUCCESS, res, "ok");
     }
 
     @DeleteMapping("/delete/{id}")
-    public boolean deleteUserById(@PathVariable Long id, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteUserById(@PathVariable Long id, HttpServletRequest request) {
         if(id == null || request == null) {
-            return false;
+            return new BaseResponse<>(BaseResponseCode.PARAM_ERR, null);
         }
         if(!userService.isAdmin(request)) {
-            return false;
+            return new BaseResponse<>(BaseResponseCode.NO_AUTH, null);
         }
         userService.getBaseMapper().deleteById(id);
-        return true;
+        return new BaseResponse<>(BaseResponseCode.SUCCESS, true, "ok");
     }
 
     @GetMapping("/current")
-    public User getCurrentUser(HttpServletRequest request) {
+    public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
         if(request == null) {
             return null;
         }
-        return userService.getCurrentUser(request);
+        return new BaseResponse<>(BaseResponseCode.SUCCESS,userService.getCurrentUser(request), "ok");
     }
 
     @GetMapping("/logout")

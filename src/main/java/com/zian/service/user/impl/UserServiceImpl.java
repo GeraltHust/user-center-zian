@@ -3,6 +3,7 @@ package com.zian.service.user.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zian.common.exception.BusinessException;
 import com.zian.constant.UserConstant;
 import com.zian.dao.entity.User;
 import com.zian.dao.mapper.UserMapper;
@@ -17,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.List;
 
+import static com.zian.constant.BaseResponseCode.*;
 import static com.zian.constant.UserConstant.ADMIN_ROLE;
 import static com.zian.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -32,26 +34,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public long userRegister(String userAccount, String password, String checkPwd) {
         // 校验逻辑
         if (StringUtils.isAnyBlank(userAccount, password, checkPwd)){
-            return -1;
+            throw new BusinessException(PARAM_ERR, "参数为空");
         }
         if (userAccount.length() < 4 || (password.length() < 8 || checkPwd.length() < 8)) {
-            return -1;
+            throw new BusinessException(PARAM_ERR, "账号或密码太短");
         }
-
         if (!checkPwd.equals(password)) {
-            return -1;
+            throw new BusinessException(PARAM_ERR, "两次输入密码不一致");
         }
-
         // 账户不能包含特殊字符
         if(!AccountValidator.isValidAccount(userAccount)) {
-            return -1;
+            throw new BusinessException(PARAM_ERR, "账号包含特殊字符");
         }
 
         // 账户不能重复
         QueryWrapper<User> qw = new QueryWrapper<>();
         qw.eq("user_account", userAccount);
         if (this.count(qw) >= 1) {
-            return -1;
+            throw new BusinessException(PARAM_ERR, "账号重复");
         }
 
         // 加密密码
@@ -63,7 +63,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setPassword(newPwd);
         boolean result = this.save(user);
         if (!result) {
-            return -1;
+            throw new BusinessException(SYSTEM_ERR, "保存用户信息失败");
         }
         return user.getId();
     }
@@ -72,13 +72,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User userLogin(String userAccount, String password, HttpServletRequest request) {
         // 校验逻辑
         if (StringUtils.isAnyBlank(userAccount, password)){
-            return null;
+            throw new BusinessException(PARAM_ERR, "参数为空");
         }
         if (userAccount.length() < 4 || password.length() < 8){
-            return null;
+            throw new BusinessException(PARAM_ERR, "账号或密码太短");
         }
         if(!AccountValidator.isValidAccount(userAccount)) {
-            return null;
+            throw new BusinessException(NO_AUTH, "权限不足");
         }
         String newPwd = MD5Util.md5WithSalt(password, MD5Util.SALT);
         QueryWrapper<User> qw = new QueryWrapper<>();
@@ -86,8 +86,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         qw.eq("password", newPwd);
         User user = this.baseMapper.selectOne(qw);
         if (user == null) {
-            log.info("user login failed, userAccount and password not match");
-            return null;
+            throw new BusinessException(PARAM_ERR, "账号或密码错误");
         }
         // 脱敏
         User newUser = anonymize(user);
@@ -99,7 +98,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User anonymize(User user) {
         if(user == null) {
-            return null;
+            throw new BusinessException(PARAM_ERR, "请求参数为空");
         }
         User newUser = new User();
         newUser.setId(user.getId());
@@ -119,7 +118,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User getCurrentUser(HttpServletRequest request) {
         User curUser = (User)request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
         if(curUser == null) {
-            return null;
+            throw new BusinessException(CONTENT_EMPTY, "当前用户为空");
         }
         // todo 用户合法性检验
         long curId = curUser.getId();
